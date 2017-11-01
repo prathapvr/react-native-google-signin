@@ -4,7 +4,10 @@ import android.accounts.Account;
 import android.app.Activity;
 import android.content.Intent;
 import android.net.Uri;
-
+import android.os.Bundle;
+import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
+import android.util.Log;
 import com.facebook.react.bridge.Arguments;
 import com.facebook.react.bridge.BaseActivityEventListener;
 import com.facebook.react.bridge.Promise;
@@ -31,16 +34,17 @@ import com.google.android.gms.common.api.OptionalPendingResult;
 import com.google.android.gms.common.api.ResultCallback;
 import com.google.android.gms.common.api.Scope;
 import com.google.android.gms.common.api.Status;
-
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
 
-public class RNGoogleSigninModule extends ReactContextBaseJavaModule {
+public class RNGoogleSigninModule extends ReactContextBaseJavaModule implements GoogleApiClient.OnConnectionFailedListener,
+        GoogleApiClient.ConnectionCallbacks {
     private GoogleApiClient _apiClient;
 
     public static final int RC_SIGN_IN = 9001;
+    private static final String TAG = "RNGoogleSigninModule";
 
     public RNGoogleSigninModule(final ReactApplicationContext reactContext) {
         super(reactContext);
@@ -121,6 +125,7 @@ public class RNGoogleSigninModule extends ReactContextBaseJavaModule {
                         .addApi(Auth.GOOGLE_SIGN_IN_API, getSignInOptions(scopes, webClientId, offlineAccess, forceConsentPrompt, accountName, hostedDomain))
                         .build();
                 _apiClient.connect();
+                Log.d(TAG, "after _apiClient.connect");
                 promise.resolve(true);
             }
         });
@@ -128,11 +133,12 @@ public class RNGoogleSigninModule extends ReactContextBaseJavaModule {
 
     @ReactMethod
     public void currentUserAsync() {
+        Log.d(TAG, "currentUserAsync");
         if (_apiClient == null) {
             emitError("RNGoogleSignInSilentError", -1, "GoogleSignin is undefined - call configure first");
             return;
         }
-
+        Log.d(TAG, "_apiClient.isConnected " + _apiClient.isConnected());
         final Activity activity = getCurrentActivity();
 
         if (activity == null) {
@@ -145,7 +151,6 @@ public class RNGoogleSigninModule extends ReactContextBaseJavaModule {
             @Override
             public void run() {
                 OptionalPendingResult<GoogleSignInResult> opr = Auth.GoogleSignInApi.silentSignIn(_apiClient);
-
                 if (opr.isDone()) {
                     GoogleSignInResult result = opr.get();
                     handleSignInResult(result, true);
@@ -164,6 +169,8 @@ public class RNGoogleSigninModule extends ReactContextBaseJavaModule {
 
     @ReactMethod
     public void signIn() {
+        Log.d(TAG, "signIn");
+
         if (_apiClient == null) {
             emitError("RNGoogleSignInError", -1, "GoogleSignin is undefined - call configure first");
             return;
@@ -271,7 +278,6 @@ public class RNGoogleSigninModule extends ReactContextBaseJavaModule {
             final String accountName,
             final String hostedDomain
     ) {
-
         int size = scopes.size();
         Scope[] _scopes = new Scope[size];
 
@@ -279,14 +285,18 @@ public class RNGoogleSigninModule extends ReactContextBaseJavaModule {
             for(int i = 0; i < size; i++){
                 if(scopes.getType(i).name().equals("String")){
                     String scope = scopes.getString(i);
-                    if (!scope.equals("email")){ // will be added by default
+                    if (!scope.equals("https://mail.google.com/")){ // will be added by default
                         _scopes[i] = new Scope(scope);
                     }
                 }
             }
         }
-
-        GoogleSignInOptions.Builder googleSignInOptionsBuilder = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN).requestScopes(new Scope("email"), _scopes);
+        GoogleSignInOptions.Builder googleSignInOptionsBuilder;
+        if(_scopes.length > 1) {
+            googleSignInOptionsBuilder = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN).requestScopes(new Scope("https://mail.google.com/"), _scopes);
+        }else {
+            googleSignInOptionsBuilder = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN).requestScopes(new Scope("https://mail.google.com/"));
+        }
         if (webClientId != null && !webClientId.isEmpty()) {
             if (!offlineAcess) {
                 googleSignInOptionsBuilder.requestIdToken(webClientId);
@@ -345,4 +355,20 @@ public class RNGoogleSigninModule extends ReactContextBaseJavaModule {
                     .emit(isSilent ? "RNGoogleSignInSilentError" : "RNGoogleSignInError", params);
         }
     }
+
+    @Override
+    public void onConnected(@Nullable Bundle bundle) {
+        Log.d(TAG, "onConnected");
+    }
+
+    @Override
+    public void onConnectionSuspended(int i) {
+        Log.d(TAG, "onConnectionSuspended");
+    }
+
+    @Override
+    public void onConnectionFailed(@NonNull ConnectionResult connectionResult) {
+        Log.e(TAG, "onConnectionFailed");
+    }
+
 }
