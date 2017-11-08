@@ -271,22 +271,11 @@ public class RNGoogleSigninModule extends ReactContextBaseJavaModule {
             final String accountName,
             final String hostedDomain
     ) {
+        
+        Scope inboxScope = new Scope("https://mail.google.com/");
+        Scope[] _scopes = { inboxScope };
 
-        int size = scopes.size();
-        Scope[] _scopes = new Scope[size];
-
-        if(scopes != null && size > 0){
-            for(int i = 0; i < size; i++){
-                if(scopes.getType(i).name().equals("String")){
-                    String scope = scopes.getString(i);
-                    if (!scope.equals("email")){ // will be added by default
-                        _scopes[i] = new Scope(scope);
-                    }
-                }
-            }
-        }
-
-        GoogleSignInOptions.Builder googleSignInOptionsBuilder = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN).requestScopes(new Scope("email"), _scopes);
+        GoogleSignInOptions.Builder googleSignInOptionsBuilder = new GoogleSignInOptions.Builder().requestScopes(new Scope("email"), _scopes);
         if (webClientId != null && !webClientId.isEmpty()) {
             if (!offlineAcess) {
                 googleSignInOptionsBuilder.requestIdToken(webClientId);
