@@ -293,7 +293,7 @@ public class RNGoogleSigninModule extends ReactContextBaseJavaModule implements 
 //         }
         GoogleSignInOptions.Builder googleSignInOptionsBuilder;
         if(_scopes.length > 1) {
-            googleSignInOptionsBuilder = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN).requestScopes(_scopes);
+            googleSignInOptionsBuilder = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN).requestScopes();
         }else {
             googleSignInOptionsBuilder = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN).requestScopes();
         }
